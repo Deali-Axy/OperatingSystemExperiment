@@ -7,9 +7,9 @@ using System.IO;
 
 namespace OperatingSystemExperiment.Exp1 {
     class CentralProcessUnit {
-        private List<ProcessControlBlock> PCBList = new List<ProcessControlBlock>();
-        private Queue<ProcessControlBlock> FinishQueue = new Queue<ProcessControlBlock>();
-        private Queue<ProcessControlBlock> ReadyQueue = new Queue<ProcessControlBlock>();
+        private readonly List<ProcessControlBlock> _pcbList = new List<ProcessControlBlock>();
+        private readonly Queue<ProcessControlBlock> _finishQueue = new Queue<ProcessControlBlock>();
+        private readonly Queue<ProcessControlBlock> _readyQueue = new Queue<ProcessControlBlock>();
 
         public CentralProcessUnit()
         {
@@ -43,7 +43,7 @@ namespace OperatingSystemExperiment.Exp1 {
             while (!reader.EndOfStream) {
                 var line = reader.ReadLine();
                 var procInfo = line.Split(' ');
-                PCBList.Add(new ProcessControlBlock {
+                _pcbList.Add(new ProcessControlBlock {
                     ID = int.Parse(procInfo[0]),
                     ArriveTime = int.Parse(procInfo[1]),
                     Time = int.Parse(procInfo[2]),
@@ -60,12 +60,12 @@ namespace OperatingSystemExperiment.Exp1 {
             var times = 0;
             while (true) {
                 // 如果所有进程运行完，则退出循环
-                if (FinishQueue.Count == PCBList.Count) {
+                if (_finishQueue.Count == _pcbList.Count) {
                     break;
                 }
 
                 // 遍历所有进程列表
-                foreach (var p in PCBList) {
+                foreach (var p in _pcbList) {
                     // 根据进程到达时间判定是否有新进程加入，然后将进程状态设置为就绪
                     if (p.ArriveTime == times++) {
                         Console.WriteLine("时间：{0},进程 {1} 到达", times, p.ID);
@@ -75,24 +75,24 @@ namespace OperatingSystemExperiment.Exp1 {
                     // 讲就绪状态进程加入就绪列表
                     if (p.Status == ProcessStatus.Ready) {
                         Console.WriteLine("时间：{0}，进程 {1} 加入就绪列表", times, p.ID);
-                        ReadyQueue.Enqueue(p);
+                        _readyQueue.Enqueue(p);
                     }
 
                     // 如果就绪队列为空则进入下一次循环
-                    if (ReadyQueue.Count == 0) {
+                    if (_readyQueue.Count == 0) {
                         Console.WriteLine("时间：{0}，没有就绪进程，进入下一个循环", times);
                         continue;
                     }
 
                     // 从就绪队列中取出一个进程运行
-                    var currentProcess = ReadyQueue.Dequeue();
+                    var currentProcess = _readyQueue.Dequeue();
                     Console.WriteLine("时间：{0}，运行进程 {1}", times, p.ID);
                     currentProcess.Run();
 
                     // 将运行完毕进程加入完成列表
                     if (currentProcess.Status == ProcessStatus.Finish) {
                         Console.WriteLine("时间：{0}，进程 {1} 运行完毕", times, p.ID);
-                        FinishQueue.Enqueue(currentProcess);
+                        _finishQueue.Enqueue(currentProcess);
                     }
                 }
             }
