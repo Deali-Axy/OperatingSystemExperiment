@@ -1,4 +1,5 @@
 using System;
+using System.Dynamic;
 using System.Threading;
 
 namespace OperatingSystemExperiment.Exp2 {
@@ -62,8 +63,15 @@ namespace OperatingSystemExperiment.Exp2 {
                     AddToBuffer(emptyBufferId, ++_productId);
                     Console.WriteLine("Produce the {0} product to buffer.", _productId);
                     // 输出缓冲区内容
+                    var nextIn = GetEmptyBuffer();
+                    var nextOut = GetFullBuffer();
                     for (var i = 0; i < _buffer.Length; i++) {
-                        Console.WriteLine("{0}: {1}", i, _buffer[i]);
+                        if (i == nextOut)
+                            Console.WriteLine("{0}: {1} <- 下一个可取出产品消费的地方", i, _buffer[i]);
+                        else if (i == nextIn)
+                            Console.WriteLine("{0}: {1} <- 可放下一个产品的位置", i, _buffer[i]);
+                        else
+                            Console.WriteLine("{0}: {1}", i, _buffer[i]);
                     }
 
                     V(SemaphoreEnum.Mutex);
@@ -74,7 +82,7 @@ namespace OperatingSystemExperiment.Exp2 {
 
             // 1个监视线程
             new Thread(() => {
-                if (_productId >= 20)
+                if (_productId > 20)
                     _continueRun = false;
             }).Start();
             // 3个生产者
@@ -84,7 +92,7 @@ namespace OperatingSystemExperiment.Exp2 {
             // 1个消费者
             new Thread(() => {
                 while (_continueRun) {
-                    Thread.Sleep(1000);
+                    Thread.Sleep(200);
                     // 请求一个满的缓冲区
                     var fullBufferId = GetFullBuffer();
                     if (fullBufferId == -1) continue;
