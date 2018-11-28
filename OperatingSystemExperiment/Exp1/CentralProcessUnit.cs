@@ -14,7 +14,7 @@ namespace OperatingSystemExperiment.Exp1 {
         public CentralProcessUnit()
         {
             LoadPcbList();
-        }
+        } 
 
         /// <summary>
         /// 生成进程列表

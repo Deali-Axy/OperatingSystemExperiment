@@ -5,8 +5,7 @@ namespace OperatingSystemExperiment {
     public static partial class Program {
         private static void Main(string[] args)
         {
-            CentralProcessUnit.GenerateProcessList(5);
-            new CentralProcessUnit().Run();
+            OperatingSystemExperiment.Exp2.Main.Do();
         }
     }
 }
