@@ -14,12 +14,12 @@ namespace OperatingSystemExperiment.Exp3 {
         /// <summary>
         /// 系统全部可分配资源：银行流动资金
         /// </summary>
-        private readonly List<int> _resource = new List<int>();
+        private List<int> _resource = new List<int>();
 
         /// <summary>
         /// 系统剩余可分配资源
         /// </summary>
-        private List<int> _avilable = new List<int>();
+        private List<int> _available = new List<int>();
 
         private Main()
         {
@@ -71,7 +71,7 @@ namespace OperatingSystemExperiment.Exp3 {
                     }
                 }
 
-                
+
                 continueFlag = !QueryExit();
             }
         }
@@ -81,7 +81,20 @@ namespace OperatingSystemExperiment.Exp3 {
         /// </summary>
         private void SecurityEvaluate()
         {
-            
+            var work = _available;
+            var finish = new bool[_processCount];
+
+            for (var i = 0; i < _processCount; i++) {
+                if (!finish[i]) {
+                    for (var t = 0; t < work.Count; t++) {
+                        var proc = _processes[i];
+                        if (proc.Need[t] < work[t]) {
+                            work[t] += proc.Allocation[t];
+                            finish[i] = true;
+                        }
+                    }
+                }
+            }
         }
 
         private bool QueryExit()
@@ -100,7 +113,7 @@ namespace OperatingSystemExperiment.Exp3 {
                 p.EvaluateNeedResource();
                 // 计算系统还剩下多少资源
                 for (var i = 0; i < _resourceClassesCount; i++) {
-                    _avilable[i] -= p.Allocation[i];
+                    _available[i] -= p.Allocation[i];
                 }
             }
         }
@@ -157,7 +170,7 @@ namespace OperatingSystemExperiment.Exp3 {
             _resourceClassesCount = int.Parse(line?.Trim());
             line = reader.ReadLine();
             _resource.AddRange(Array.ConvertAll(line?.Split(' '), int.Parse));
-            _avilable.AddRange(Array.ConvertAll(line?.Split(' '), int.Parse));
+            _available.AddRange(Array.ConvertAll(line?.Split(' '), int.Parse));
             reader.Close();
         }
 
