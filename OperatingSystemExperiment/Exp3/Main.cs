@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
 
-namespace OperatingSystemExperiment.Exp3
-{
-    public class Main
-    {
+namespace OperatingSystemExperiment.Exp3 {
+    public class Main {
         private int _resourceClassesCount = 0;
         private int _processCount = 0;
 
@@ -30,8 +29,7 @@ namespace OperatingSystemExperiment.Exp3
             LoadProcessMaxResource();
 
             var continueFlag = true;
-            while (continueFlag)
-            {
+            while (continueFlag) {
                 mainLoop:
                 // 获取各进程已分配资源
                 LoadAllocationResource();
@@ -41,16 +39,14 @@ namespace OperatingSystemExperiment.Exp3
                 // 打印各数据结构当前值
                 PrintStatus();
                 Console.Write("请输入要操作的进程号：");
-                if (!int.TryParse(Console.ReadLine(), out var processId))
-                {
+                if (!int.TryParse(Console.ReadLine(), out var procId)) {
                     Console.WriteLine("\n请输入数字！");
                     if (QueryExit()) Environment.Exit(0);
                     else goto mainLoop;
                 }
 
-                if (processId < 0 || processId >= _processes.Count)
-                {
-                    Console.WriteLine("\n不存在进程号为 {0} 的进程！", processId);
+                if (procId < 0 || procId >= _processes.Count) {
+                    Console.WriteLine("\n不存在进程号为 {0} 的进程！", procId);
                     if (QueryExit()) Environment.Exit(0);
                     else goto mainLoop;
                 }
@@ -60,20 +56,17 @@ namespace OperatingSystemExperiment.Exp3
                 var requestVector = Array.ConvertAll(request?.Split(' '), int.Parse);
 
                 // 检查资源请求是否合理
-                var proc = _processes[processId];
+                var proc = _processes[procId];
                 Console.WriteLine("银行家算法检验中...");
-                for (var i = 0; i < requestVector.Length; i++)
-                {
-                    if (requestVector[i] > proc.Need[i])
-                    {
+                for (var i = 0; i < requestVector.Length; i++) {
+                    if (requestVector[i] > proc.Need[i]) {
                         Console.WriteLine("分配失败！资源类型 {0}，请求数量 {1}，超过进程所需数量 {2}",
                             i, requestVector[i], proc.Need[i]);
                         if (QueryExit()) Environment.Exit(0);
                         else goto mainLoop;
                     }
 
-                    if (requestVector[i] > proc.Max[i])
-                    {
+                    if (requestVector[i] > proc.Max[i]) {
                         Console.WriteLine("分配失败！资源类型 {0}，请求数量 {1}，超过进程最大资源数量 {2}",
                             i, requestVector[i], proc.Need[i]);
                         if (QueryExit()) Environment.Exit(0);
@@ -81,31 +74,32 @@ namespace OperatingSystemExperiment.Exp3
                     }
                 }
 
-                // 资源预分配
+                // 保存当前状态
                 var tempAvailable = new List<int>(_available);
                 var tempAllocation = (int[]) proc.Allocation.Clone();
                 var tempNeed = (int[]) proc.Need.Clone();
+                // 资源预分配
+                for (var i = 0; i < _resourceClassesCount; i++) {
+                    proc.Allocation[i] += requestVector[i];
+                    proc.Need[i] -= requestVector[i];
+                }
 
-                if (SecurityEvaluate())
-                {
+                if (SecurityEvaluate()) {
                     Console.WriteLine("正在为进程 {0} 分配资源", proc.Id);
                     // 写入资源分配文件
                     var writer = new StreamWriter(Path.Combine(
                         Environment.CurrentDirectory, "Exp3", "input", "Allocation_list.txt"), false);
-                    foreach (var p in _processes)
-                    {
-                        var line = "";
-                        foreach (var allocation in p.Allocation)
-                        {
-                            line += allocation + " ";
-                        }
+                    foreach (var p in _processes) {
+                        // 使用LinQ语句，构造输出行
+                        var line = p.Allocation.Aggregate("", (current, allocation) => current + (allocation + " "));
 
-                        writer.WriteLine(line);
+                        writer.WriteLine(line.Trim());
                     }
+
+                    Console.WriteLine("已经保存新的分配状态！");
                     writer.Close();
                 }
-                else
-                {
+                else {
                     Console.WriteLine("恢复试分配前的状态。");
                     // 恢复预分配之前的状态
                     _available = tempAvailable;
@@ -126,42 +120,56 @@ namespace OperatingSystemExperiment.Exp3
             var finish = new bool[_processCount];
             var found = false; // 判断标志
             var finishCount = 0; // 满足条件的进程数目
+            var safeQueue = new List<int>();
 
-            while (finishCount < _processCount)
-            {
-                for (var i = 0; i < _processCount; i++)
-                {
-                    if (!finish[i])
-                    {
-                        for (var t = 0; t < work.Count; t++)
-                        {
-                            var proc = _processes[i];
-                            if (proc.Need[t] <= work[t])
-                            {
-                                // 模拟释放资源
-                                work[t] += proc.Allocation[t];
-                                // 保存进程号
-                                finish[i] = true;
-                                finishCount++;
+            while (finishCount < _processCount) {
+                for (var procId = 0; procId < _processCount; procId++) {
+                    var proc = _processes[procId];
+
+                    if (!finish[procId]) {
+                        for (var resId = 0; resId < work.Count; resId++) {
+                            Debug.WriteLine("安全性测试，procId={0} resId=(1)", procId, resId);
+                            if (proc.Need[resId] > work[resId]) {
+                                Debug.WriteLine("NotFound! procId={0} resId={1}", procId, resId);
+                                found = false;
+                            }
+                            else {
+                                Debug.WriteLine("Found! procId={0} resId={1}", procId, resId);
                                 found = true;
                             }
                         }
                     }
-                }
 
-                if (found)
-                    found = false;
-                else
-                    break;
+                    if (found) {
+                        // 模拟释放资源
+                        for (var t = 0; t < work.Count; t++) {
+                            work[t] += proc.Allocation[t];
+                        }
+
+                        // 保存进程号
+                        finish[procId] = true;
+                        finishCount++;
+                        // 加入安全队列
+                        safeQueue.Add(procId);
+                        // 重置状态
+                        found = false;
+                    }
+                }
             }
 
-            for (var i = 0; i < _processCount; i++)
-            {
-                if (!finish[i])
-                {
-                    Console.WriteLine("未通过安全性测试！");
-                    return false;
-                }
+            Console.WriteLine("安全序列如下：");
+            // 打印安全序列
+            var output = "";
+            foreach (var procId in safeQueue) {
+                output += "P" + procId + ",";
+            }
+
+            Console.WriteLine(output.TrimEnd(','));
+
+
+            if (finish.Any(flag => !flag)) {
+                Console.WriteLine("未通过安全性测试！");
+                return false;
             }
 
             Console.WriteLine("已经通过安全性测试！");
@@ -181,12 +189,10 @@ namespace OperatingSystemExperiment.Exp3
         /// </summary>
         private void EvaluateNeedResource()
         {
-            foreach (var p in _processes)
-            {
+            foreach (var p in _processes) {
                 p.EvaluateNeedResource();
                 // 计算系统还剩下多少资源
-                for (var i = 0; i < _resourceClassesCount; i++)
-                {
+                for (var i = 0; i < _resourceClassesCount; i++) {
                     _available[i] -= p.Allocation[i];
                 }
             }
@@ -200,16 +206,13 @@ namespace OperatingSystemExperiment.Exp3
             Console.WriteLine("-------------------------银行家算法-------------------------");
             Console.WriteLine("系统进程数量：{0}；资源种类数量：{1}", _processCount, _resourceClassesCount);
             Console.WriteLine("可用资源向量 Available：");
-            foreach (var i in _resource)
-            {
+            foreach (var i in _resource) {
                 Console.Write("{0} ", i);
             }
 
             Console.WriteLine("\n最大需求矩阵 Max：");
-            foreach (var p in _processes)
-            {
-                foreach (var t in p.Max)
-                {
+            foreach (var p in _processes) {
+                foreach (var t in p.Max) {
                     Console.Write("{0} ", t);
                 }
 
@@ -217,10 +220,8 @@ namespace OperatingSystemExperiment.Exp3
             }
 
             Console.WriteLine("已分配矩阵 Allocation：");
-            foreach (var p in _processes)
-            {
-                foreach (var t in p.Allocation)
-                {
+            foreach (var p in _processes) {
+                foreach (var t in p.Allocation) {
                     Console.Write("{0} ", t);
                 }
 
@@ -228,10 +229,8 @@ namespace OperatingSystemExperiment.Exp3
             }
 
             Console.WriteLine("需求矩阵 Need：");
-            foreach (var p in _processes)
-            {
-                foreach (var t in p.Need)
-                {
+            foreach (var p in _processes) {
+                foreach (var t in p.Need) {
                     Console.Write("{0} ", t);
                 }
 
@@ -265,11 +264,9 @@ namespace OperatingSystemExperiment.Exp3
             var line = reader.ReadLine();
             var index = 0;
             _processCount = int.Parse(line?.Trim());
-            while (!reader.EndOfStream)
-            {
+            while (!reader.EndOfStream) {
                 line = reader.ReadLine();
-                var tempProc = new ProcessExp3(index++)
-                {
+                var tempProc = new ProcessExp3(index++) {
                     Max = Array.ConvertAll(line?.Split(' '), int.Parse)
                 };
                 _processes.Add(tempProc);
@@ -286,18 +283,15 @@ namespace OperatingSystemExperiment.Exp3
             var reader = new StreamReader(Path.Combine(
                 Environment.CurrentDirectory, "Exp3", "input", "Allocation_list.txt"));
             var index = 0;
-            do
-            {
-                var line = reader.ReadLine();
+            do {
+                var line = reader.ReadLine()?.Trim();
                 _processes[index++].Allocation = Array.ConvertAll(line?.Split(' '), int.Parse);
             } while (!reader.EndOfStream);
 
             reader.Close();
         }
 
-        private void EvaluateProcessNeedResource()
-        {
-        }
+        private void EvaluateProcessNeedResource() { }
 
         public static void Run()
         {
