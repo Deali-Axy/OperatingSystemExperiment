@@ -22,7 +22,7 @@ namespace OperatingSystemExperiment.Exp1 {
         /// <param name="count">进程数量</param>
         public static void GenerateProcessList(int count)
         {
-            var processListFile = Path.Combine(Environment.CurrentDirectory, "process_list.txt");
+            var processListFile = Path.Combine(Environment.CurrentDirectory,"Exp1","input", "process_list.txt");
             var writer = new StreamWriter(processListFile);
             var rnd = new Random(DateTime.Now.Millisecond);
             for (var i = 0; i < count; i++) {

@@ -3,15 +3,13 @@ using System.Dynamic;
 using System.IO;
 using System.Threading;
 
-namespace OperatingSystemExperiment.Exp2
-{
+namespace OperatingSystemExperiment.Exp2 {
     /// <summary>
     /// 生产者-消费者问题
     /// 使用 P-V 操作解决同步和互斥问题
     /// 本实验要求设计并实现一个进程，该进程拥有3个生产者线程和1个消费者线程，它们使用10个不同的缓冲区。
     /// </summary>
-    public static class Main
-    {
+    public static class Main {
         private static int[] _buffer = new int[10];
 
         /// <summary>
@@ -32,13 +30,12 @@ namespace OperatingSystemExperiment.Exp2
         private static Semaphore _semaphore = new Semaphore(0, 1);
 
         private static StreamWriter _writer = new StreamWriter(
-            Path.Combine(Environment.CurrentDirectory, "exp2_output.txt"));
+            Path.Combine(Environment.CurrentDirectory, "Exp2", "output", "exp2_output.txt"));
 
         /// <summary>
         /// 信号枚举
         /// </summary>
-        private enum SemaphoreEnum
-        {
+        private enum SemaphoreEnum {
             /// <summary>
             /// 互斥信号量，用以阻止生产者线程和消费者线程同时操作缓冲区队列
             /// </summary>
@@ -57,10 +54,8 @@ namespace OperatingSystemExperiment.Exp2
 
         public static void Run()
         {
-            ThreadStart producer = () =>
-            {
-                while (_continueRun)
-                {
+            ThreadStart producer = () => {
+                while (_continueRun) {
                     Thread.Sleep(1200);
                     // 请求空缓冲区
                     var emptyBufferId = GetEmptyBuffer();
@@ -76,8 +71,7 @@ namespace OperatingSystemExperiment.Exp2
                     // 输出缓冲区内容
                     var nextIn = GetEmptyBuffer();
                     var nextOut = GetFullBuffer();
-                    for (var i = 0; i < _buffer.Length; i++)
-                    {
+                    for (var i = 0; i < _buffer.Length; i++) {
                         if (i == nextOut)
                             Console.WriteLine("{0}: {1} <- 下一个可取出产品消费的地方", i, _buffer[i]);
                         else if (i == nextIn)
@@ -93,10 +87,8 @@ namespace OperatingSystemExperiment.Exp2
             };
 
             // 1个监视线程
-            new Thread(() =>
-            {
-                while (_continueRun)
-                {
+            new Thread(() => {
+                while (_continueRun) {
                     if (_productId > 20)
                         _continueRun = false;
                 }
@@ -106,10 +98,8 @@ namespace OperatingSystemExperiment.Exp2
             new Thread(producer).Start();
             new Thread(producer).Start();
             // 1个消费者
-            new Thread(() =>
-            {
-                while (_continueRun)
-                {
+            new Thread(() => {
+                while (_continueRun) {
                     Thread.Sleep(200);
                     // 请求一个满的缓冲区
                     var fullBufferId = GetFullBuffer();
@@ -146,10 +136,8 @@ namespace OperatingSystemExperiment.Exp2
         /// <returns>空缓冲区的编号</returns>
         private static int GetEmptyBuffer()
         {
-            for (var i = 0; i < _buffer.Length; i++)
-            {
-                if (_buffer[i] == 0)
-                {
+            for (var i = 0; i < _buffer.Length; i++) {
+                if (_buffer[i] == 0) {
                     return i;
                 }
             }
@@ -163,10 +151,8 @@ namespace OperatingSystemExperiment.Exp2
         /// <returns>满缓冲区的编号</returns>
         private static int GetFullBuffer()
         {
-            for (var i = 0; i < _buffer.Length; i++)
-            {
-                if (_buffer[i] != 0)
-                {
+            for (var i = 0; i < _buffer.Length; i++) {
+                if (_buffer[i] != 0) {
                     return i;
                 }
             }
@@ -191,8 +177,7 @@ namespace OperatingSystemExperiment.Exp2
         /// <param name="s"></param>
         private static void P(SemaphoreEnum s)
         {
-            switch (s)
-            {
+            switch (s) {
                 case SemaphoreEnum.Mutex:
                     _isLock = true;
                     break;
@@ -213,8 +198,7 @@ namespace OperatingSystemExperiment.Exp2
         /// <param name="s"></param>
         private static void V(SemaphoreEnum s)
         {
-            switch (s)
-            {
+            switch (s) {
                 case SemaphoreEnum.Mutex:
                     _isLock = false;
                     break;
