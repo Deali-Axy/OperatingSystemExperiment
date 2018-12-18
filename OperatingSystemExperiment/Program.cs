@@ -6,7 +6,7 @@ namespace OperatingSystemExperiment
     {
         private static void Main(string[] args)
         {
-            Exp4.Main.Run();
+            Exp5.Main.Run();
         }
     }
 }
